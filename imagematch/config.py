@@ -17,7 +17,7 @@ You would access these items as cf.Section1.x and cf.Section1.y and they should 
 of cf.Section1.z:  because of the commas, we interpret it as a list, converting
 all values to numeric (int or float) if possible, or leave as strings.
 '''
-
+import imagematch
 import configparser,os
 
 def guess_value(value):
@@ -26,7 +26,7 @@ def guess_value(value):
 
    if value == '':
       return None
-   
+
    # check for True/False
    if value.lower() == 'true':
       return True
@@ -58,7 +58,7 @@ def guess_value(value):
 
 class section:
    '''A class used by the config class to hold the options of a section.'''
-   
+
    def __init__(self, parent, section):
       self.cf = parent.cf
       self.section = section
@@ -95,6 +95,10 @@ class config:
       self.sections = {}
       for sec in self.cf.sections():
          self.sections[sec] = section(self, sec)
+      if 'imagematch' not in self.sections:
+         self.cf.add_section('imagematch')
+         self.cf.set('imagematch','version',imagematch.__version__)
+         self.sections['imagematch'] = section(self, 'imagematch')
 
    def __getattr__(self, key):
       if key in self.__dict__['sections']:
@@ -105,3 +109,7 @@ class config:
    def __dir__(self):
       '''implement this to get auto-complete in ipython.'''
       return self.__dict__['sections']
+
+   def write(self,filename):
+      with open(filename , 'w') as f:
+         self.cf.write(f)
