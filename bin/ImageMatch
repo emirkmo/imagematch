@@ -3,6 +3,7 @@
 import sys
 import tarfile
 from imagematch.ImageMatching_scalerot import *
+from imagematch.version_import import version_number
 import imagematch
 from io import StringIO
 from imagematch import config
@@ -66,7 +67,7 @@ snmaskr = 10.0
 diff_size =
 '''
 #Add version number to default cfg file
-sample_config = sample_config + '\n[imagematch]\nversion = '+str(imagematch.__version__)
+sample_config = sample_config + '\n[imagematch]\nversion = '+str(version_number)
 
 from sys import argv
 from imagematch.rdarg import rdarg
@@ -157,9 +158,10 @@ try:
 except:
    pass
 
+#Todo: Remove this directory creation
 if sexdir is None:
-   t = tarfile.open(os.path.join(libdir, 'data', 'sexdir.tar.gz'))
-   t.extractall()
+   #t = tarfile.open(os.path.join(libdir, 'data', 'sexdir.tar.gz'))
+   #t.extractall()
    sexdir = os.path.join('.','sex')
 
 try:

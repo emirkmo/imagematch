@@ -17,8 +17,8 @@ You would access these items as cf.Section1.x and cf.Section1.y and they should 
 of cf.Section1.z:  because of the commas, we interpret it as a list, converting
 all values to numeric (int or float) if possible, or leave as strings.
 '''
-import imagematch
 import configparser,os
+from .version_import import version_number
 
 def guess_value(value):
    '''Try to guess the most likely type and return it typed, rather than
@@ -97,7 +97,8 @@ class config:
          self.sections[sec] = section(self, sec)
       if 'imagematch' not in self.sections:
          self.cf.add_section('imagematch')
-         self.cf.set('imagematch','version',imagematch.__version__)
+         version=version_number()
+         self.cf.set('imagematch','version',version)
          self.sections['imagematch'] = section(self, 'imagematch')
 
    def __getattr__(self, key):

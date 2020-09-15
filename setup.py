@@ -5,7 +5,7 @@ scripts = glob('bin/*')
 
 setup(
       name='imagematch',
-      version='0.1.0',
+      version='0.1.1',
       author='Chris Burns',
       author_email='cburns@carnegiescience.edu',
       packages=['imagematch'],
@@ -29,4 +29,3 @@ setup(
          'Programming Language :: Python :: 3.7',
          'Topic :: Scientific/Engineering :: Astronomy'],
       )
-

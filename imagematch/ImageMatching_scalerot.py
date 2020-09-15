@@ -4,7 +4,7 @@
    (the image) and then subtract them.
 
    AUTHOR:  Dan Kelson
-   
+
    10/10/2005:  Added a bit of code to let the user specify masks in the
                 header, allowing them to throw out bad stars, ghosts, etc.
    02/21/2006:  We can now input a noise map (using -sig) so that the same
@@ -33,6 +33,7 @@ from .basis import abasis,mbasis,svdfit
 from .npextras import bwt, divz, between
 from .fitsutils import qdump
 from numpy import linalg
+from astropy.io import ascii #Added
 from scipy.ndimage import map_coordinates
 import sys
 debug = 1
@@ -64,7 +65,7 @@ def QuickShift(i,x,y):
    return s
 
 def ndf(nord):
-   '''Returns the number of degrees of freedom for nord-order coordinate 
+   '''Returns the number of degrees of freedom for nord-order coordinate
    transformation.'''
    if nord == -1:
       Ncoeff = 2
@@ -191,7 +192,7 @@ class Mask:
       return st
 
    def add_mask(self, x0, y0, x1, y1, sense='inside'):
-      '''Add a box mask.  If [sense] is 'inside' mask the interior pixels, 
+      '''Add a box mask.  If [sense] is 'inside' mask the interior pixels,
       otherwise, mask the outside pixels.'''
       if x1 < x0:  x0,x1 = x1,x0
       if y1 < y0:  y0,y1 = y1,y0
@@ -259,8 +260,8 @@ class Mask:
 
 class Observation:
    def __init__(self,image,wt=None,scale='scale',pakey="rotangle",
-         saturate=30000, skylev=None, sigsuf=None, wtype="MAP_RMS", 
-         mask_file=None, reject=0, snx=None, sny=None, snmaskr=10.0, 
+         saturate=30000, skylev=None, sigsuf=None, wtype="MAP_RMS",
+         mask_file=None, reject=0, snx=None, sny=None, snmaskr=10.0,
          extra_sufs=[], hdu=0, minarea=10):
 
       self.image = image   # The image name
@@ -272,9 +273,9 @@ class Observation:
       base = os.path.basename(image)
       self.catalog = base.replace(".fits",".cat")  # Output catalog of objects
       # Error maps
-      if sigsuf: 
+      if sigsuf:
          self.sigimage = self.image.replace(".fits",sigsuf+".fits")
-      else: 
+      else:
          self.sigimage = None
       # Any extra stuff
       if extra_sufs:
@@ -378,7 +379,7 @@ class Observation:
       self.master = None
 
    def log(self, message):
-      '''Quick function to print log information to the screen and also keep 
+      '''Quick function to print log information to the screen and also keep
       a copy in a specified log file.'''
       print(message)
       if self.log_stream is not None:
@@ -421,8 +422,8 @@ class Observation:
       newtab['MAGERR_BEST'].info.format = '{:7.3f}'
       newtab.write(self.catalog, format='ascii.fixed_width', delimiter=' ',
             overwrite=True)
+      print('Wrote out',self.catalog)
 
-      
    def sex(self):
       '''This function runs sextractor on the image, finding images to be used
       for rectification and solving for the kernel.'''
@@ -460,9 +461,10 @@ class Observation:
       f.close()
 
    def getSources(self):
-      '''Read in the previously determined source catalog and segmentation 
+      '''Read in the previously determined source catalog and segmentation
       map'''
-      if self.do_sex: 
+      if self.do_sex:
+         print('running sextractor')
          self.detectSources()
          return
       self.sexdata = ascii.read(self.catalog)
@@ -525,7 +527,7 @@ class Observation:
       self.dy = dy*self.scale
       self.ds = ds*self.scale
       self.da = da
-    
+
    def objmatch(self,nord=0,perr=2,aerr=1.0, angles=[0.0],interactive=0,
          use_db=0):
       '''Figure out which objects match up with which other objects in the
@@ -596,7 +598,7 @@ class Observation:
                   np.transpose([self.master.x,self.master.y]),1)
             np.savetxt('uv0', uv0)
             np.savetxt('uv1', uv1)
-            # dists[i,j] gives the absolute distance from object i in the 
+            # dists[i,j] gives the absolute distance from object i in the
             # image to object j in master
             dists = np.sqrt(np.power(uv0[:,0,NA] - uv1[NA,:,0],2) + \
                             np.power(uv0[:,1,NA] - uv1[NA,:,1],2))
@@ -695,16 +697,16 @@ class Observation:
          if iter:
             allx0 = np.array(self.sexdata["X_IMAGE"])
             ally0 = np.array(self.sexdata["Y_IMAGE"])
-            if "MAG_BEST" in self.sexdata.colnames: 
+            if "MAG_BEST" in self.sexdata.colnames:
                allm0 = np.array(self.sexdata["MAG_BEST"])
-            elif "MAG_AUTO" in self.sexdata.colnames: 
+            elif "MAG_AUTO" in self.sexdata.colnames:
                allm0 = np.array(self.sexdata["MAG_AUTO"])
             allq0 = np.array(self.sexdata["FLAGS"])
             allx1 = np.array(self.master.sexdata["X_IMAGE"])
             ally1 = np.array(self.master.sexdata["Y_IMAGE"])
             if "MAG_BEST" in self.sexdata.colnames:
                allm1 = np.array(self.master.sexdata["MAG_BEST"])
-            elif "MAG_AUTO" in self.sexdata.colnames: 
+            elif "MAG_AUTO" in self.sexdata.colnames:
                allm1 = np.array(self.master.sexdata["MAG_AUTO"])
             allq1 = np.array(self.master.sexdata["FLAGS"])
             if nord == -1:
@@ -787,7 +789,7 @@ class Observation:
       return 0
 
    def imread(self, bs=False, usewcs=False):
-      '''Read in the FITS data and assign to the member variables.  
+      '''Read in the FITS data and assign to the member variables.
       Optionall background subtract if bs=True'''
       if self.data == None:
          self.log( "Now reading frames for %s" % (self))
@@ -821,7 +823,7 @@ class Observation:
          self.naxis1,self.naxis2 = f[self.hdu].header['NAXIS1'],\
                                    f[self.hdu].header['NAXIS2']
          f.close()
-         if self.master: 
+         if self.master:
             self.master.imread(bs=bs, usewcs=usewcs)
 
          if self.sigimage is not None:
@@ -898,12 +900,12 @@ class Observation:
          if self.master.sigimage is not None:
             self.log( "Transforming sigma map...")
             bpm = np.less(self.master.sigma,0)*1.0
-            self.tsigma = map_coordinates(self.master.sigma, [iy,ix], 
+            self.tsigma = map_coordinates(self.master.sigma, [iy,ix],
                   order=3, mode='constant', cval=0)
-            #self.tsigma = VTKImageTransform(self.master.sigma, self.tx, 
-            tbpm = map_coordinates(bpm, [iy,ix], 
+            #self.tsigma = VTKImageTransform(self.master.sigma, self.tx,
+            tbpm = map_coordinates(bpm, [iy,ix],
                   order=3, mode='constant', cval=0)
-            #tbpm = VTKImageTransform(bpm, self.tx, 
+            #tbpm = VTKImageTransform(bpm, self.tx,
             #      self.ty, numret=1, cubic=0, interp=1, constant=-1)
             self.tsigma = np.where(tbpm > 0.1, -1, self.tsigma)
          else:
@@ -913,7 +915,7 @@ class Observation:
             self.log( "Transforming extra maps...")
             self.textras = []
             for xmap in self.master.extras:
-               self.textras.append(map_coordinates(xmap, [iy,ix], 
+               self.textras.append(map_coordinates(xmap, [iy,ix],
                      order=3, mode='constant', cval=0))
                #self.textras.append(VTKImageTransform(xmap, self.tx,
                #     self.ty, numret=1, cubic=0, interp=1, constant=-1))
@@ -933,7 +935,7 @@ class Observation:
       if self.bg_img is not None:
          return self.bg_img, self.bg_rms
       bkg_est = MedianBackground()
-      bkg = Background2D(self.data, (50,50), filter_size=(3,3), 
+      bkg = Background2D(self.data, (50,50), filter_size=(3,3),
             bkg_estimator=bkg_est)
       self.bg_img = bkg.background
       self.bg_rms = bkg.background_rms
@@ -946,7 +948,7 @@ class Observation:
       #      udata = np.compress(ukeep.ravel(), self.data.ravel())
       #   else:
       #      udata = self.data.ravel()
-      #   
+      #
       #   bg = GaussianBG(udata,99)
       #   #d = VTKSubtract(udata, bg)
       #   d = udata - bg
@@ -1001,7 +1003,7 @@ class Observation:
       # Take out data that is explicitly set to zero. Hmmmmmm....
       zids = np.equal(self.data, 0.0).astype(np.float32)
       zids = VTKGauss(zids, gwid, numret=1)
-      # note by using np.less(zids, 0.02), we're effectively doing a fuzzy 
+      # note by using np.less(zids, 0.02), we're effectively doing a fuzzy
       #  'not'
       wt = VTKMultiply(seg, VTKMultiply(mseg, np.less(zids, 0.02)))
 
@@ -1050,7 +1052,7 @@ class Observation:
 
       # Get rid of little "islands" of data that can't constrain the kernel
       # and just add to the noise
-      if self.pwid > -1: 
+      if self.pwid > -1:
          wt = VTKIslandRemoval(wt,1.0,0.0,max([3,self.pwid])**2,numret=1)
       self.wt = wt.astype(np.float32)
 
@@ -1096,7 +1098,7 @@ class Observation:
             n0 = np.compress(wtflat,np.ravel(self.invnoise))
             basisimage = self.data
             if self.sigimage is not None:
-               # make a variance map 
+               # make a variance map
                basis_sigma = np.power(self.sigma, 2)
          else:
             f0 = np.compress(wtflat,wtflat*np.ravel(self.data))
@@ -1107,7 +1109,7 @@ class Observation:
          step = ll/79 + 1  # for performance meter
          cwt = np.compress(wtflat,wtflat)
          # i,j indeces of masked image
-         coy,cox = np.compress(wtflat, 
+         coy,cox = np.compress(wtflat,
             [np.ravel(self.oy), np.ravel(self.ox)], 1).astype(np.int32)
          flatimage = np.ravel(basisimage)
          basis = []
@@ -1150,7 +1152,7 @@ class Observation:
          bases = np.asarray(bases)
          npsx = int(np.sqrt(bases.shape[0]))+1
          npsy = bases.shape[0]//npsx + 1
-         imbases = np.zeros((npsy*(bases.shape[1]+5), 
+         imbases = np.zeros((npsy*(bases.shape[1]+5),
                              npsx*(bases.shape[2]+5)), np.float64)
          imb1 = 0
          for j in range(npsy):
@@ -1223,7 +1225,7 @@ class Observation:
                               "(%9.1f,%12.6f,%12.6f,%12.6f,%12.6f)" \
                                     % (vc,umean,urms,uchi2,uchi2u))
          del sol1,sol2,sol3,du,dv,dw,basis
-         if self.skyoff: 
+         if self.skyoff:
             self.log( "Sky= %f" % (self.psf1[ll]))
          # Save the flux ratio for later if reversing.
          self.fluxrat = np.sum(self.psf1[:ll])
@@ -1328,7 +1330,7 @@ class Observation:
       sys.stdout.flush()
       convolved = convolved[kshape[0]-1:shape[0]+kshape[0]-1,
                             kshape[1]-1:shape[1]+kshape[1]-1]
-      return(convolved) 
+      return(convolved)
 
    def component(self,k,matching,grid=0):
       ll = len(self.ii)
@@ -1344,25 +1346,25 @@ class Observation:
    def GoCatGo(self,master,verb=0,rev=0,xwin=None,ywin=None, skyoff=0,pwid=0,
                perr=5.0,nmax=40,nord=0,spatial=0,mcut=0,vcut=1e-2,match=1,
                subt=0, registered=0,preserve=0, min_sep=None,
-               quick_convolve=0, do_sex=0, thresh=3., sexdir="./sex", 
+               quick_convolve=0, do_sex=0, thresh=3., sexdir="./sex",
                sexcmd='sex',
-               angles=[0.0], use_db=0, interactive=0, starlist=None, 
+               angles=[0.0], use_db=0, interactive=0, starlist=None,
                diff_size=None, bs=False, crowd=False, usewcs=False):
       self.master = master
       self.skyoff=skyoff
       self.pwid=pwid
       if xwin and ywin:
-         self.mask.add_mask(xwin[0], ywin[0], xwin[1], ywin[1], 
+         self.mask.add_mask(xwin[0], ywin[0], xwin[1], ywin[1],
                sense='outside')
-         self.master.mask.add_mask(xwin[0], ywin[0], xwin[1], ywin[1], 
+         self.master.mask.add_mask(xwin[0], ywin[0], xwin[1], ywin[1],
                sense='outside')
       elif xwin:
          self.mask.add_mask(xwin[0], None, xwin[1], None, sense='outside')
-         self.master.mask.add_mask(xwin[0], None, xwin[1], None, 
+         self.master.mask.add_mask(xwin[0], None, xwin[1], None,
                sense='outside')
       elif ywin:
          self.mask.add_mask(None, ywin[0], None, ywin[1], sense='outside')
-         self.master.mask.add_mask(None, ywin[0], None, ywin[1], 
+         self.master.mask.add_mask(None, ywin[0], None, ywin[1],
                sense='outside')
       self.spatial=spatial
       self.rev=rev
@@ -1420,7 +1422,7 @@ class Observation:
          if self.pwid > -1: qdump(self.psfgrid,self.grid)
       if subt:
          ids = np.indices(self.match.shape)
-         if self.rev: 
+         if self.rev:
             if diff_size is not None and snx is not None and sny is not None:
                dists = np.sqrt(np.power(ids[1]-snx,2) + \
                        np.power(ids[0]-sny,2))
@@ -1439,15 +1441,15 @@ class Observation:
                      self.image)
             qdump(self.SN, (self.match - self.bg), self.image)
             if self.sigma is not None:
-               qdump(self.SN.replace('.fits','_sigma.fits'), self.sigma, 
+               qdump(self.SN.replace('.fits','_sigma.fits'), self.sigma,
                      self.image)
             qdump(self.template, (self.timage - self.bg), self.master.image)
             if self.sigimage is not None and self.master.sigimage is not None:
                # Make the noise map of the difference image
                var = np.power(self.csigma, 2) + np.power(self.master.sigma, 2)
-               qdump(self.difference.replace('.fits','_sigma.fits'), 
+               qdump(self.difference.replace('.fits','_sigma.fits'),
                      np.sqrt(var), self.image)
-         else: 
+         else:
             if diff_size is not None and snx is not None and sny is not None:
                dists = np.sqrt(np.power(ids[1]-snx,2) + \
                                np.power(ids[0]-sny,2))
@@ -1469,9 +1471,9 @@ class Observation:
             if self.sigimage is not None and self.master.sigimage is not None:
                # Make the noise map of the difference image
                var = np.power(self.csigma, 2) + np.power(self.sigma, 2)
-               qdump(self.difference.replace('.fits','_sigma.fits'), 
+               qdump(self.difference.replace('.fits','_sigma.fits'),
                      np.sqrt(var), self.image)
-      
+
       if plt is not None:
          self.plot_diff()
       return 0
@@ -1506,5 +1508,3 @@ class Observation:
       fig.tight_layout()
 
       fig.savefig(self.SN.replace('.fits', '_diff.png'))
-
-
